@@ -11,51 +11,22 @@
 
 library(assertthat)
 library(dplyr)
-library(readr)
 library(purrr)
 library(tidyr)
 library(jsonlite)
 
-### --- Load JSON data --- ### delete "as tibble" to revert
-parteien <- list.files("./data/", full.names = T) %>% 
+### --- Load JSON data, unnest politicians --- ### 
+bt2 <- list.files("./data/", full.names = T) %>% 
   map_dfr(fromJSON) %>% 
-  as_tibble(
-    key = c("abgeordnete", "fraktion"),
-    tibble = (list(
-      tibble(
-        value = c(partei)
-      ),
-      tibble(
-        value = c(abgeordnete)
-      )
-    ))
-  )
-
-### prev ver.
-parteien <- list.files("./data/", full.names = T) %>% 
-  map_dfr(fromJSON) %>% 
-  as_tibble()
-
-colnames(parteien)[2] <- "partei"
-
-### --- Unnest dataset --- ###
-bt2 <- parteien %>% 
-  unnest(partei) %>% 
-  unnest(abgeordnete)
-  
-# testing unnest, delete to revert
-bt2 <- parteien %>% 
-  unnest(c(partei, abgeordnete))
-
+  as_tibble() %>% 
+  unnest(c(abgeordnete)) %>% 
+  mutate(part0et, .keep = "unused")
 
 ### --- Average political party age --- ###
 ans1 <- bt2 %>% 
-  mutate(age = 2021 - lebensdaten) %>% 
-  group_by(partei) %>% 
-  summarise(mean(age)) %>% 
-  arrange(desc(`mean(age)`))
-
-colnames(ans1)[2] <- "avg_age"
+  group_by(fraktion) %>% 
+  summarise(avg_age = 2021 - mean(lebensdaten)) %>% 
+  arrange(desc(avg_age))
   
 if (
   assert_that(
